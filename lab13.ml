@@ -37,32 +37,24 @@ lists.
     # sum (List.init 1_000_000 Fun.id) ;;
     Stack overflow during evaluation (looping recursion?).
 
-As computation proceeds, each recursive call of `length tl` or `sum
-tl` is suspended, with the suspended computation stored on a stack,
-until we reach the end of the list. At that point, the stack finally
-unwinds and the expression is evaluated. If the number of calls grows
-too large, we run out of room allocated to the stack of suspended
-computations, and the computation fails with a `Stack_overflow`
-exception.
+Each call of `length tl` or `sum tl` is suspended until we reach the
+end of the list. At that point, the stack finally unwinds and the
+expression is evaluated. Two ways of addressing this problem are using
+a tail recursive function or an explicit loop.
 
-Two ways of addressing this problem are (i) using a tail recursive
-function or (ii) using an explicit loop.
-
-In a tail recursive function the recursive invocation *is* the final
-result of the invoking call. The value of the recursive function is
-immediately returned; no further computation must be done to it, so no
-suspended computation needs to be stored on the call stack, thus
-avoiding the problem of stack overflow. 
-
-Below, the length function above has been rewritten to use a
+Tail recursive functions have the recursive invocation as the result
+of the invoking call (that is, the final computation to find a result
+is the recursive call). Thus, functions need not use a call stack to
+keep track of suspended computations, avoiding the problem of stack
+overflow. Below, the length function above has been rewritten to use a
 tail-recursive auxiliary function `length_tr` (the "tr" stands for
 "tail-recursive") to demonstrate this:
 
     let length lst =
-      let rec length_tr lst accum =
+      let rec length_tr lst acc =
         match lst with
-        | [] -> accum
-        | _hd :: tl -> length_tr tl (1 + accum) in
+        | [] -> acc
+        | _hd :: tl -> length_tr tl (1 + acc) in
       length_tr lst 0 ;;
 
 The technique used here, using a tail-recursive auxiliary function
@@ -89,10 +81,10 @@ Gauss would be proud!
 ....................................................................*)
 
 let sum (lst : int list) : int =
-  let rec sum_tr lst accum =
+  let rec sum_tr lst acc =
     match lst with
-    | [] -> accum
-    | hd :: tl -> sum_tr tl (hd + accum) in
+    | [] -> acc
+    | hd :: tl -> sum_tr tl (hd + acc) in
   sum_tr lst 0 ;;
 
 (*....................................................................
@@ -119,11 +111,11 @@ though the documentation doesn't mention that fact).
 ....................................................................*)
 
 let prods (xs : int list) (ys : int list) : int list =
-  let rec prods_tr xs ys accum =
+  let rec prods_tr xs ys acc =
     match xs, ys with
-    | [], [] -> accum
+    | [], [] -> acc
     | xhd :: xtl, yhd :: ytl ->
-       prods_tr xtl ytl (xhd * yhd :: accum)
+       prods_tr xtl ytl (xhd * yhd :: acc)
     | [], _
     | _, [] ->
        raise (Failure "Lists must be of same length") in
@@ -220,7 +212,6 @@ list of all positive odd numbers less than or equal to a given
 int. (Don't worry about dealing with negative arguments.)
 
 For example, we expect the following behavior:
-
   # odd_while 10
   - : int list = [1; 3; 5; 7; 9]
   # odd_for 7
@@ -260,9 +251,9 @@ let odd_func (limit : int) : int list =
    overflows. *)
   
 let odd_func_tr (limit : int) : int list =
-  let rec odd_from lower accum =
-    if lower > limit then accum
-    else odd_from (lower + 2) (lower :: accum) in
+  let rec odd_from lower acc =
+    if lower > limit then acc
+    else odd_from (lower + 2) (lower :: acc) in
   List.rev (odd_from 1 []) ;;
   
 (* Here's another functional version using `init` to build a list of
@@ -322,7 +313,7 @@ let sum_iter (lst : int list) : int =
 (*....................................................................
 Exercise 7: Rewrite the recursive `prods` function from above using a
 `while` loop. Don't forget to handle the case where the two lists
-have different lengths, by raising an appropriate exception.
+have different lengths.
 ....................................................................*)
 
 let prods_iter (xs : int list) (ys : int list) : int list =
@@ -383,11 +374,11 @@ lines of a given height as shown in the example below. See
 https://docs.cs50.net/2017/ap/problems/mario/less/mario.html.) *)
 
 (*....................................................................
-Exercise 9: Implement a function in the procedural paradigm that
-prints out a half-pyramid of a specified height, per the below. Use
-hashes (#) for blocks. The function should raise an Invalid_argument
-exception for heights greater than 23. (Why? I don't know. That's just
-how CS50 did it.)
+Exercise 9: Implement a function in procedural style that prints out a
+half-pyramid of a specified height, per the below. Use hashes (#) for
+blocks. The function should raise an Invalid_argument exception for
+heights greater than 23. (Why? I don't know. That's just how CS50 did
+it.)
 
     # mario 5 ;;
         ##
